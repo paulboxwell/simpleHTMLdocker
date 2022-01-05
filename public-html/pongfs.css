@@ -1,0 +1,10 @@
+body { background-color: rgb(0, 0, 0); color: #AAA; font-size: 12pt; padding: 1em; }
+
+#unsupported { border: 1px solid yellow; color: black; background-color: #FFFFAD; padding: 2em; margin: 1em; display: inline-block; }
+
+
+
+
+@media screen and (min-width: 0px) {
+  #game    { width: 95%; height: 100%; }
+}
