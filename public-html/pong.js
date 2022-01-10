@@ -7,9 +7,9 @@ Pong = {
   Defaults: {
     width:     document.documentElement.clientWidth,   // logical canvas width (browser will scale to physical canvas size - which is controlled by @media css queries)
     height:    document.documentElement.clientHeight,   // logical canvas height (ditto)
-    wallWidth: 1,
+    wallWidth: 6,
     balls:     200,
-    stats:     true
+    stats:     false  // true to show statistics
   },
 
   //-----------------------------------------------------------------------------
