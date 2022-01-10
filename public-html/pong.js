@@ -32,28 +32,40 @@ Pong = {
   },
 
   update: function(dt) {
-    
+
+    //add eggs randomly
+    if (Game.random(0,1)>0.99)
+    {
+      this.addball_c("rgb(0,255,0)",true);
+    }
     for(var n = 0 ; n < this.balls.length ; n++) {
       //Hatch
       if (this.balls[n].egg == true)
       {
-        this.balls[n].radius += 0.0001;
-        this.balls[n].age += 1;
+        this.balls[n].radius += 0.0005;
+        this.balls[n].age += 3;
         if (this.balls[n].radius > 5)
         {
-          this.balls[n].radius *= 0.75;
-          this.balls[n].egg = false;
-          this.balls[n].velocity = 100;
-          this.balls[n].age *= 5;
+          if (this.balls[n].sterial == false)
+          {
+            this.balls[n].radius *= 0.75;
+            this.balls[n].egg = false;
+            this.balls[n].velocity = 100;
+            this.balls[n].age *= 5;
+          }
+          else
+          {
+            this.balls[n].radius = 5;
+          }
         }
       }
       else
       {
         //Birth
-        if (this.balls[n].radius > 30)
+        if (this.balls[n].radius > 10)
         {
-          this.balls[n].radius -= 3;
-          this.addball_c(this.balls[n].color);
+          this.balls[n].radius -= 1;
+          this.addball_c(this.balls[n].color,false);
         }
         //Age
         this.balls[n].age -= 1;
@@ -75,29 +87,44 @@ Pong = {
             if (this.balls[m].egg == true)
             {
               // hatched vs egg
-              this.balls[n].radius += this.balls[m].radius;
+              this.balls[n].radius += this.balls[m].radius/3;
+              this.balls[n].velocity -= this.balls[m].radius;
               this.balls[m].dead = true;
             }
             else
             {
               // hatched vs hatched
-              this.balls[n].health -= 2;
+              //directiondiff =  this.balls[n].direction - this.balls[m].direction;
+              //directiondiff *= directiondiff;
+              //if (directiondiff < 1)
+              //{
+
+              //}
+              /*this.balls[n].health -= 2;
               if (this.balls[n].health <0)
               {
                 this.balls[m].radius += this.balls[n].radius;
                 this.balls[n].dead = true;
               }
+              */
+              if (this.balls[n].velocity > this.balls[m].velocity)
+              {
+                this.balls[n].velocity += 0.3;
+                this.balls[m].velocity -= 0.3;
+              }
+              
             }
 
             
             // Conservation of momentum formular:  http://canu.ucalgary.ca/map/classes/info/ualberta/collisions_2D/applethelp/lesson/lesson_1.html
             // create functions for these collisions. Polar in (angel, velocity) - 
+            /*
             diff = (this.balls[n].direction - this.balls[m].direction) / (this.balls[n].direction + this.balls[m].direction);
             massn = this.balls[n].radius * this.balls[n].radius;
             massm = this.balls[m].radius * this.balls[m].radius;
             this.balls[n].direction += diff * (1/ (massn + massm) * massn);
             this.balls[m].direction -= diff * (1/ (massn + massm) * massm);
-
+            */
 
             //if (this.balls[n].radius <= this.balls[m].radius && this.balls[n].velocity < this.balls[m].velocity && this.balls[m].color != this.balls[n].color )
             //{
@@ -121,6 +148,17 @@ Pong = {
 
     //inputs  (2/4)
     for(var n = 0 ; n < this.balls.length ; n++) {
+      if (this.balls[n].egg == false)
+      {
+        if (this.balls[n].velocity > 100)
+        {
+          this.balls[n].velocity -= 0.1;
+        }
+        else
+        {
+          this.balls[n].velocity += 0.1;
+        }
+      }
       var closest_id;
       var closest_dist = 1000;
 
@@ -140,7 +178,7 @@ Pong = {
         {
           //move toward egg
           temp = Game.getAngle(this.balls[n].x,this.balls[n].y, this.balls[closest_id].x, this.balls[closest_id].y)
-          this.balls[n].direction = temp + 3.145/2;
+          this.balls[n].direction = ((temp + 3.145/2) + this.balls[n].direction*10)/11;
         }
         else
         {
@@ -181,9 +219,10 @@ Pong = {
     this.balls.push(Object.construct(Pong.Ball, this));
   },
 
-  addball_c: function(c) {
+  addball_c: function(c,s) {
     this.balls.push(Object.construct(Pong.Ball, this));
     this.balls[this.balls.length-1].color = c;
+    this.balls[this.balls.length-1].sterial = s;
   },
 
   // Key press commands
@@ -250,6 +289,7 @@ Pong = {
       this.health  = 10;
       this.egg     = true;
       this.age     = 0;
+      this.sterial = false;
     },
 
     update: function(dt) {
