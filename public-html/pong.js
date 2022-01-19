@@ -27,17 +27,32 @@ Pong = {
   constructBalls: function() {
     var balls = [];
     for(var n = 0 ; n < this.cfg.balls ; n++)
-      balls.push(Object.construct(Pong.Ball, this));
+      balls.push(Object.construct(Pong.Ball, this,Game.random(0,this.width),Game.random(0,this.height),Game.random(1,5),Game.random(0,200)));
     return balls;
+  },
+
+  addball: function() {
+    this.balls.push(Object.construct(Pong.Ball, this,Game.random(0,this.width),Game.random(0,this.height),Game.random(1,5),Game.random(0,200)));
+  },
+
+  addball_c: function(c,s,z,r) {
+    this.balls.push(Object.construct(Pong.Ball, this,Game.random(0,this.width),Game.random(0,this.height),z,r));
+    this.balls[this.balls.length-1].color = c;
+    this.balls[this.balls.length-1].sterial = s;
   },
 
   update: function(dt) {
 
     //add eggs randomly
-    if (Game.random(0,1)>0.99)
+    if (Game.random(0,1)>0.95)
     {
-      this.addball_c("rgb(0,255,0)",true);
+      this.addball_c("rgb(0,255,0)",true,Game.random(1,5),0);
     }
+    // add fish randomly
+      if (Game.random(0,1)>0.995)
+      {
+        this.addball_c("rgb(" + Math.round(Game.random(0,255)) + ", " + Math.round(Game.random(0,255)) + ", " + Math.round(Game.random(0,255)) + ")",false,Game.random(1,5),Game.random(100,400));
+      }
     for(var n = 0 ; n < this.balls.length ; n++) {
       //Hatch
       if (this.balls[n].egg == true)
@@ -51,7 +66,7 @@ Pong = {
             this.balls[n].radius *= 0.75;
             this.balls[n].egg = false;
             this.balls[n].velocity = 100;
-            this.balls[n].age *= 5;
+            this.balls[n].age *= this.balls[n].age / 100;
           }
           else
           {
@@ -64,14 +79,18 @@ Pong = {
         //Birth
         if (this.balls[n].radius > 10)
         {
-          this.balls[n].radius -= 1;
-          this.addball_c(this.balls[n].color,false);
+          this.balls[n].radius -= this.balls[n].eggsize/2;
+          this.addball_c(this.balls[n].color,false,this.balls[n].eggsize, this.balls[n].range);
         }
         //Age
         this.balls[n].age -= 1;
         if (this.balls[n].age <= 0)
         {
-          this.balls[n].dead = true;
+          //Die of old age
+          this.balls[n].egg = true;
+          this.balls[n].sterial = true;
+          this.balls[n].velocity = 0;
+          this.balls[n].color = "rgb(200,50,50)";
         }
       }
 
@@ -87,6 +106,7 @@ Pong = {
             if (this.balls[m].egg == true)
             {
               // hatched vs egg
+              this.health = 10;
               this.balls[n].radius += this.balls[m].radius/3;
               this.balls[n].velocity -= this.balls[m].radius;
               this.balls[m].dead = true;
@@ -132,18 +152,24 @@ Pong = {
               //this.balls[m].radius += 0.1;
             //}
             //else 
-            if (this.balls[n].velocity <= this.balls[m].velocity)
-            {
+            //if (this.balls[n].velocity <= this.balls[m].velocity)
+            //{
               //this.balls[n].color = this.balls[m].color;
-            }
+            //}
           }
         }
       }
-      this.balls[n].health += 1;
-      if (this.balls[n].health >this.balls[n].radius)
+      
+      this.balls[n].health -= this.balls[n].velocity/50000;
+      if (this.balls[n].health < 0)
       {
-        this.balls[n].health = this.balls[n].radius;
+        //die of starvation
+        this.balls[n].egg = true;
+        this.balls[n].sterial = true;
+        this.balls[n].velocity = 0;
+        this.balls[n].color = "rgb(200,50,50)";
       }
+      
     }
 
     //inputs  (2/4)
@@ -172,13 +198,13 @@ Pong = {
       }
 
       //Shole behaviour (hard programmed - remove when using AI)
-      if (closest_dist < 300)
+      if (closest_dist < this.balls[n].range)
       {
         if (this.balls[closest_id].egg == true)
         {
           //move toward egg
           temp = Game.getAngle(this.balls[n].x,this.balls[n].y, this.balls[closest_id].x, this.balls[closest_id].y)
-          this.balls[n].direction = ((temp + 3.145/2) + this.balls[n].direction*10)/11;
+          this.balls[n].direction = ((temp + Math.PI/2) + this.balls[n].direction*10)/11;
         }
         else
         {
@@ -215,15 +241,7 @@ Pong = {
       this.balls[n].draw(ctx);
   },
 
-  addball: function() {
-    this.balls.push(Object.construct(Pong.Ball, this));
-  },
 
-  addball_c: function(c,s) {
-    this.balls.push(Object.construct(Pong.Ball, this));
-    this.balls[this.balls.length-1].color = c;
-    this.balls[this.balls.length-1].sterial = s;
-  },
 
   // Key press commands
 
@@ -271,16 +289,18 @@ Pong = {
 
   Ball: {
 
-    initialize: function(pong) {
+    initialize: function(pong, i, j, startsize, eyerange) {
       this.pong    = pong;
-      this.radius  = Game.random(1,5);
+      this.eggsize = startsize + Game.random(-0.1,0.1);
+      this.range   = eyerange + Game.random(-5,5);
+      this.radius  = this.eggsize;
       this.minX    = pong.cfg.wallWidth + this.radius;
       this.minY    = pong.cfg.wallWidth + this.radius;
       this.maxX    = pong.width  - pong.cfg.wallWidth - this.radius;
       this.maxY    = pong.height - pong.cfg.wallWidth - this.radius;
-      this.x       = Game.random(this.minX, this.maxX);
-      this.y       = Game.random(this.minY, this.maxY);
-      this.direction = Game.random(0,6.28318531);
+      this.x       = i;
+      this.y       = j;
+      this.direction = 0;
       this.velocity = 0;
       this.dx      = (this.velocity * Game.getSinCos("sin", this.direction));
       this.dy      = (this.velocity * Game.getSinCos("cos", this.direction));
@@ -290,6 +310,13 @@ Pong = {
       this.egg     = true;
       this.age     = 0;
       this.sterial = false;
+    },
+
+    toJSON(){
+      return {
+        color: this.color,
+        radius: this.radius
+      }
     },
 
     update: function(dt) {
