@@ -5,11 +5,16 @@
 Pong = {
 
   Defaults: {
-    width:     document.documentElement.clientWidth,   // logical canvas width (browser will scale to physical canvas size - which is controlled by @media css queries)
-    height:    document.documentElement.clientHeight,   // logical canvas height (ditto)
-    wallWidth: 6,
-    balls:     200,
-    stats:     false  // true to show statistics
+    width:      document.documentElement.clientWidth,   // logical canvas width (browser will scale to physical canvas size - which is controlled by @media css queries)
+    height:     document.documentElement.clientHeight,   // logical canvas height (ditto)
+    wallWidth:  6,
+    balls:      500,
+    stats:      false,  // true to show statistics
+    selected:   0,
+    range:      0,
+    population: 0,
+    gen:        0,
+    pause:      false
   },
 
   //-----------------------------------------------------------------------------
@@ -35,10 +40,17 @@ Pong = {
     this.balls.push(Object.construct(Pong.Ball, this,Game.random(0,this.width),Game.random(0,this.height),Game.random(1,5),Game.random(0,200)));
   },
 
-  addball_c: function(c,s,z,r) {
+  addball_c: function(c,s,z,r,g) {
     this.balls.push(Object.construct(Pong.Ball, this,Game.random(0,this.width),Game.random(0,this.height),z,r));
     this.balls[this.balls.length-1].color = c;
     this.balls[this.balls.length-1].sterial = s;
+    this.balls[this.balls.length-1].generation = g + 1;
+  },
+
+  randcolourchange: function(colour_in) {
+    var array = colour_in.substring(4, colour_in.length-1).replace(/ /g, '').split(',');
+    var colour_out = "rgb("+(array[0]-5+Math.floor(Math.random() * 10))+","+(array[1]-5+Math.floor(Math.random() * 10))+","+(array[2]-5+Math.floor(Math.random() * 10))+")";
+    return colour_out;
   },
 
   update: function(dt) {
@@ -46,12 +58,12 @@ Pong = {
     //add eggs randomly
     if (Game.random(0,1)>0.95)
     {
-      this.addball_c("rgb(0,255,0)",true,Game.random(1,5),0);
+      this.addball_c("rgb(0,255,0)",true,Game.random(1,5),0,0);
     }
     // add fish randomly
       if (Game.random(0,1)>0.995)
       {
-        this.addball_c("rgb(" + Math.round(Game.random(0,255)) + ", " + Math.round(Game.random(0,255)) + ", " + Math.round(Game.random(0,255)) + ")",false,Game.random(1,5),Game.random(100,400));
+        this.addball_c("rgb(" + Math.round(Game.random(0,255)) + ", " + Math.round(Game.random(0,255)) + ", " + Math.round(Game.random(0,255)) + ")",false,Game.random(1,5),Game.random(100,400),1);
       }
     for(var n = 0 ; n < this.balls.length ; n++) {
       //Hatch
@@ -80,7 +92,7 @@ Pong = {
         if (this.balls[n].radius > 10)
         {
           this.balls[n].radius -= this.balls[n].eggsize/2;
-          this.addball_c(this.balls[n].color,false,this.balls[n].eggsize, this.balls[n].range);
+          this.addball_c(this.randcolourchange(this.balls[n].color),false,this.balls[n].eggsize, this.balls[n].range,this.balls[n].generation);
         }
         //Age
         this.balls[n].age -= 1;
@@ -226,9 +238,17 @@ Pong = {
     for(var n = 0 ; n < this.balls.length ; n++){
       if (this.balls[n].dead == false) {
         newballs.push(this.balls[n])
+        if (n == this.cfg.selected)
+        {
+          this.cfg.selected = newballs.length - 1;
+        }
       }
     }
     this.balls = newballs;
+    if (this.cfg.selected >= this.balls.length)
+    {
+      this.cfg.selected = this.balls.length-1;
+    }
 
     //movement update (4/4)
     for(var n = 0 ; n < this.balls.length ; n++)
@@ -236,9 +256,52 @@ Pong = {
   },
 
   draw: function(ctx) {
+    if (this.cfg.stats)
+    {
+      this.balls[this.cfg.selected].draw_selected(ctx);
+      this.cfg.range =  this.balls[this.cfg.selected].range;
+      this.cfg.population = this.balls.length;
+      this.cfg.gen = this.balls[this.cfg.selected].generation;
+    }
     this.court.draw(ctx);
     for(var n = 0 ; n < this.balls.length; n++)
       this.balls[n].draw(ctx);
+  },
+
+
+  toggleStats: function() {
+    this.cfg.stats = !this.cfg.stats;
+  },
+
+  toggleselected: function(up) {
+    //this.balls[this.cfg.selected].velocity += 1;
+    if (up)
+    {
+      if (this.cfg.selected < this.balls.length)
+      {
+        this.cfg.selected += 1;
+      }
+      else
+      {
+        this.cfg.selected = 0;
+      }
+    }
+    else
+    {
+      if (this.cfg.selected > 0)
+      {
+        this.cfg.selected -= 1;
+      }
+      else
+      {
+        this.cfg.selected = 0;
+      }
+    }
+
+  },
+
+  togglepauseplay: function() {
+    this.cfg.pause = !this.cfg.pause;
   },
 
 
@@ -247,7 +310,11 @@ Pong = {
 
   onkeydown: function(keyCode) {
     switch(keyCode) {
-      case Game.KEY.Q: this.addball();    break;
+      case Game.KEY.Q: this.addball(); this.toggleselected();   break;
+      case Game.KEY.A: this.toggleStats();    break;
+      case Game.KEY.UP: this.toggleselected(true);    break;
+      case Game.KEY.DOWN: this.toggleselected(false);    break;
+      case Game.KEY.SPACE: this.togglepauseplay(false);    break;
     }
   },
 
@@ -310,6 +377,7 @@ Pong = {
       this.egg     = true;
       this.age     = 0;
       this.sterial = false;
+      this.generation = 0;
     },
 
     toJSON(){
@@ -369,6 +437,14 @@ Pong = {
         ctx.lineTo(this.x - Game.getSinCos("sin", this.direction - 0.5*3.145)*(this.radius), this.y - Game.getSinCos("cos", this.direction - 0.5*3.145)*(this.radius));
         ctx.stroke();  // Draw it
       }
+    },
+
+    draw_selected: function(ctx) {
+      ctx.fillStyle = "rgb(25,25,25)";
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, 40, 0, 2*Math.PI, true);
+      ctx.fill();
+      ctx.closePath();
     },
 /*
     getx: function() {

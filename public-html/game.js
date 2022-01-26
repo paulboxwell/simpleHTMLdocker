@@ -247,7 +247,9 @@ Game = {
     },
 
     loop: function() {
-      var start  = Game.timestamp(); this.update((start - this.lastFrame)/1000.0); // send dt as seconds
+      var start  = Game.timestamp(); 
+      if (!this.cfg.pause)
+        this.update((start - this.lastFrame)/1000.0); // send dt as seconds
       var middle = Game.timestamp(); this.draw();
       var end    = Game.timestamp();
       this.updateStats(middle - start, end - middle);
@@ -290,6 +292,13 @@ Game = {
       if (this.cfg.stats) {
         ctx.fillStyle = 'white';
         ctx.font = '9pt sans-serif';
+        ctx.fillText("Creature Data ",         this.width - 100, this.height - 180);
+        ctx.fillText("ID: "  + this.cfg.selected,         this.width - 100, this.height - 165);
+        ctx.fillText("range: "  + this.cfg.range,         this.width - 100, this.height - 150);
+        ctx.fillText("gen: "  + this.cfg.gen,         this.width - 100, this.height - 135);
+        ctx.fillText("Sim Data: ",         this.width - 100, this.height - 120);
+        ctx.fillText("Pop: "  + this.cfg.population,         this.width - 100, this.height - 105);
+        ctx.fillText("Speed Data ",         this.width - 100, this.height - 90);
         ctx.fillText("frame: "  + this.stats.count,         this.width - 100, this.height - 75);
         ctx.fillText("fps: "    + this.stats.fps,           this.width - 100, this.height - 60);
         ctx.fillText("update: " + this.stats.update + "ms", this.width - 100, this.height - 45);
